@@ -67,13 +67,11 @@
     <div class="container">
         <h1>Login Details</h1>
 
-        <!-- Toggle Options -->
         <div class="toggle-section">
             <button id="xtream-btn" onclick="selectOption('xtream')">Xtream Login</button>
             <button id="mac-btn" onclick="selectOption('mac')">MAC Address</button>
         </div>
 
-        <!-- Xtream Login Form -->
         <div id="xtream-section" class="form-section">
             <div class="form-group">
                 <label for="xtream-host">Host Address</label>
@@ -89,7 +87,6 @@
             </div>
         </div>
 
-        <!-- MAC Address Form -->
         <div id="mac-section" class="form-section" style="display: none;">
             <div class="form-group">
                 <label for="mac-host">Host Address</label>
@@ -101,7 +98,6 @@
             </div>
         </div>
 
-        <!-- Submit Button -->
         <button id="submit-btn" onclick="submitForm()">Submit</button>
     </div>
 
@@ -110,17 +106,11 @@
 
         function selectOption(option) {
             selectedOption = option;
-
-            if (option === "xtream") {
-                document.getElementById("xtream-section").style.display = "block";
-                document.getElementById("mac-section").style.display = "none";
-            } else {
-                document.getElementById("xtream-section").style.display = "none";
-                document.getElementById("mac-section").style.display = "block";
-            }
+            document.getElementById("xtream-section").style.display = option === "xtream" ? "block" : "none";
+            document.getElementById("mac-section").style.display = option === "mac" ? "block" : "none";
         }
 
-        function submitForm() {
+        async function submitForm() {
             const xtreamHost = document.getElementById("xtream-host").value.trim();
             const xtreamUsername = document.getElementById("xtream-username").value.trim();
             const xtreamPassword = document.getElementById("xtream-password").value.trim();
@@ -128,32 +118,22 @@
             const macHost = document.getElementById("mac-host").value.trim();
             const macAddress = document.getElementById("mac-address").value.trim();
 
-            let payload = {};
+            let payload = selectedOption === "xtream"
+                ? { host: xtreamHost, username: xtreamUsername, password: xtreamPassword }
+                : { host: macHost, mac_address: macAddress };
 
-            if (selectedOption === "xtream") {
-                if (!xtreamHost || !xtreamUsername || !xtreamPassword) {
-                    alert("Please fill in all Xtream details.");
-                    return;
-                }
-                payload = {
-                    host: xtreamHost,
-                    username: xtreamUsername,
-                    password: xtreamPassword,
-                };
-            } else {
-                if (!macHost || !macAddress) {
-                    alert("Please fill in all MAC address details.");
-                    return;
-                }
-                payload = {
-                    host: macHost,
-                    mac_address: macAddress,
-                };
+            try {
+                const response = await fetch("http://127.0.0.1:5000/update_credentials", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+                const result = await response.json();
+                if (response.ok) alert(result.message);
+                else alert(`Error: ${result.error}`);
+            } catch (error) {
+                alert(`Error: ${error.message}`);
             }
-
-            // Simulate saving to xtream_login.json
-            console.log("Saving to xtream_login.json:", JSON.stringify(payload, null, 2));
-            alert("Details submitted successfully!");
         }
     </script>
 </body>

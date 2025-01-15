@@ -3,136 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Selection</title>
+    <title>Login Page</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 400px;
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        input[type="text"], input[type="url"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 4px;
-            background-color: #007bff;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        button:disabled {
-            background-color: #ccc;
-        }
-        .toggle-section {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-        }
-        .toggle-section button {
-            flex: 1;
-            margin: 0 5px;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; margin: 50px; }
+        .container { max-width: 400px; margin: auto; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Login Details</h1>
-
-        <div class="toggle-section">
-            <button id="xtream-btn" onclick="selectOption('xtream')">Xtream Login</button>
-            <button id="mac-btn" onclick="selectOption('mac')">MAC Address</button>
+        <h1>Enter Login Details</h1>
+        <div id="xtream-section">
+            <input id="xtream-host" type="url" placeholder="Enter Xtream Host">
+            <input id="xtream-username" type="text" placeholder="Enter Xtream Username">
+            <input id="xtream-password" type="text" placeholder="Enter Xtream Password">
         </div>
-
-        <div id="xtream-section" class="form-section">
-            <div class="form-group">
-                <label for="xtream-host">Host Address</label>
-                <input type="url" id="xtream-host" placeholder="Enter Xtream Host">
-            </div>
-            <div class="form-group">
-                <label for="xtream-username">Username</label>
-                <input type="text" id="xtream-username" placeholder="Enter Xtream Username">
-            </div>
-            <div class="form-group">
-                <label for="xtream-password">Password</label>
-                <input type="text" id="xtream-password" placeholder="Enter Xtream Password">
-            </div>
+        <div id="mac-section" class="hidden">
+            <input id="mac-host" type="url" placeholder="Enter Stalker Host">
+            <input id="mac-address" type="text" placeholder="Enter MAC Address">
         </div>
-
-        <div id="mac-section" class="form-section" style="display: none;">
-            <div class="form-group">
-                <label for="mac-host">Host Address</label>
-                <input type="url" id="mac-host" placeholder="Enter Stalker Portal Host">
-            </div>
-            <div class="form-group">
-                <label for="mac-address">MAC Address</label>
-                <input type="text" id="mac-address" placeholder="Enter MAC Address">
-            </div>
-        </div>
-
-        <button id="submit-btn" onclick="submitForm()">Submit</button>
+        <button onclick="submitData()">Submit</button>
     </div>
-
     <script>
-        let selectedOption = "xtream";
+        async function submitData() {
+            const host = document.getElementById('xtream-host').value || document.getElementById('mac-host').value;
+            const username = document.getElementById('xtream-username').value;
+            const password = document.getElementById('xtream-password').value;
+            const mac_address = document.getElementById('mac-address').value;
 
-        function selectOption(option) {
-            selectedOption = option;
-            document.getElementById("xtream-section").style.display = option === "xtream" ? "block" : "none";
-            document.getElementById("mac-section").style.display = option === "mac" ? "block" : "none";
-        }
+            const payload = username && password
+                ? { host, username, password }
+                : { host, mac_address };
 
-        async function submitForm() {
-            const xtreamHost = document.getElementById("xtream-host").value.trim();
-            const xtreamUsername = document.getElementById("xtream-username").value.trim();
-            const xtreamPassword = document.getElementById("xtream-password").value.trim();
+            const response = await fetch('/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
 
-            const macHost = document.getElementById("mac-host").value.trim();
-            const macAddress = document.getElementById("mac-address").value.trim();
-
-            let payload = selectedOption === "xtream"
-                ? { host: xtreamHost, username: xtreamUsername, password: xtreamPassword }
-                : { host: macHost, mac_address: macAddress };
-
-            try {
-                const response = await fetch("http://127.0.0.1:5000/update_credentials", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                });
-                const result = await response.json();
-                if (response.ok) alert(result.message);
-                else alert(`Error: ${result.error}`);
-            } catch (error) {
-                alert(`Error: ${error.message}`);
+            if (response.ok) {
+                alert('Details submitted successfully!');
+            } else {
+                alert('Error submitting details.');
             }
         }
     </script>

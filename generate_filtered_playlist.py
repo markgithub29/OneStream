@@ -1,7 +1,6 @@
 import json
 import requests
 
-
 def fetch_xtream_live_channels(host, username, password, allowed_groups):
     """Fetch live channels using Xtream API."""
     base_url = f"{host}/player_api.php?username={username}&password={password}"

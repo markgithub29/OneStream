@@ -3,7 +3,7 @@ name: Update Playlist
 on:
   schedule:
     - cron: '0 0 * * *' # Runs daily at midnight
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual trigger from Actions tab
 
 jobs:
   update-playlist:
@@ -25,18 +25,16 @@ jobs:
 
       - name: Run Playlist Script
         run: |
+          echo "Running playlist generation..."
           python generate_filtered_playlist.py
-          echo "Playlist generation complete."
-
-      - name: Verify Output
-        run: |
-          pwd
-          ls -lh filtered_playlist.m3u || echo "File not found!"
+          echo "Script completed."
+          echo "Verifying generated file:"
+          ls -lh filtered_playlist.m3u || echo "⚠️ filtered_playlist.m3u not found!"
 
       - name: Commit and Push Playlist
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add filtered_playlist.m3u || true
-          git diff --quiet && echo "No diff, skipping commit." || git commit -m "Updated filtered playlist $(date)"
+          git commit -m "Updated filtered playlist $(date)" || echo "No changes to commit"
           git push

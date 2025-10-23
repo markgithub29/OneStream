@@ -1,9 +1,4 @@
 {
   "host": "http://main.light-ott.net:80/c/",
   "mac_address": "00:1A:79:09:E4:2E"
-
-  // For Xtream API, use instead:
-  // "host": "http://your.xtream.host",
-  // "username": "your_username",
-  // "password": "your_password"
 }

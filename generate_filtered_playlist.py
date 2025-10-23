@@ -1,16 +1,30 @@
 import json
 import requests
 
+def is_xtream_portal(host):
+    """Check if the host supports Xtream Codes API."""
+    test_url = f"{host.rstrip('/')}/player_api.php?username=test&password=test"
+    try:
+        response = requests.get(test_url, timeout=6)
+        if response.status_code == 200 and "user_info" in response.text:
+            print(f"✅ Xtream API detected: {host}")
+            return True
+    except Exception:
+        pass
+    print(f"❌ Xtream API not detected at {test_url}")
+    return False
+
+
 def fetch_xtream_live_channels(host, username, password, allowed_groups):
     """Fetch live channels using Xtream API."""
-    base_url = f"{host}/player_api.php?username={username}&password={password}"
+    base_url = f"{host.rstrip('/')}/player_api.php?username={username}&password={password}"
 
     # Fetch all live categories
     categories_url = f"{base_url}&action=get_live_categories"
-    categories_response = requests.get(categories_url)
+    categories_response = requests.get(categories_url, timeout=10)
 
     if categories_response.status_code != 200:
-        raise Exception("Failed to fetch categories. Check your Xtream credentials.")
+        raise Exception("Failed to fetch categories. Check Xtream credentials.")
 
     try:
         categories = categories_response.json()
@@ -26,10 +40,8 @@ def fetch_xtream_live_channels(host, username, password, allowed_groups):
             continue
 
         category_id = category["category_id"]
-
-        # Fetch streams for each category
         streams_url = f"{base_url}&action=get_live_streams&category_id={category_id}"
-        streams_response = requests.get(streams_url)
+        streams_response = requests.get(streams_url, timeout=10)
 
         if streams_response.status_code != 200:
             print(f"Failed to fetch streams for category: {category_name}")
@@ -41,13 +53,12 @@ def fetch_xtream_live_channels(host, username, password, allowed_groups):
             print(f"Invalid stream response for category: {category_name}")
             continue
 
-        # Add category header and streams
         playlist.append(f"# Group: {category_name}")
         for stream in streams:
-            stream_name = stream["name"]
-            stream_id = stream["stream_id"]
+            stream_name = stream.get("name", "Unknown")
+            stream_id = stream.get("stream_id", "")
             stream_icon = stream.get("stream_icon", "")
-            stream_url = f"{host}/live/{username}/{password}/{stream_id}.m3u8"
+            stream_url = f"{host.rstrip('/')}/live/{username}/{password}/{stream_id}.m3u8"
 
             playlist.append(f"#EXTINF:-1 tvg-logo=\"{stream_icon}\" group-title=\"{category_name}\",{stream_name}")
             playlist.append(stream_url)
@@ -96,10 +107,9 @@ def fetch_stalker_live_channels(host, mac_address, allowed_groups):
     headers["Authorization"] = f"Bearer {token}"
     headers["mac"] = mac_address
 
-    # Fetch all live channels
     channels_url = f"{valid_host}/server/load.php?type=itv&action=get_all_channels&JsHttpRequest=1-xml"
     print(f"Fetching channels from: {channels_url}")
-    channels_response = requests.get(channels_url, headers=headers)
+    channels_response = requests.get(channels_url, headers=headers, timeout=10)
 
     if channels_response.status_code != 200:
         raise Exception("Failed to fetch channels from Stalker Portal.")
@@ -115,7 +125,6 @@ def fetch_stalker_live_channels(host, mac_address, allowed_groups):
     for channel in channels:
         category_name = channel.get("tv_genre", "Unknown")
 
-        # Check if category name is allowed
         if not (category_name in allowed_groups or category_name.startswith("IND")):
             continue
 
@@ -129,27 +138,27 @@ def fetch_stalker_live_channels(host, mac_address, allowed_groups):
     return playlist
 
 
-# Load credentials
+# Main logic
 with open("xtream_login.json", "r") as file:
     credentials = json.load(file)
 
 host = credentials["host"].rstrip("/")
 allowed_groups = ["INDIA", "INDIAN", "TELUGU", "CRICKET"]
 
-# Detect credential type
-if "username" in credentials and "password" in credentials:
-    playlist = fetch_xtream_live_channels(
-        host, credentials["username"], credentials["password"], allowed_groups
-    )
-elif "mac_address" in credentials:
-    playlist = fetch_stalker_live_channels(
-        host, credentials["mac_address"], allowed_groups
-    )
-else:
-    raise Exception("Invalid credentials format in xtream_login.json")
+try:
+    if is_xtream_portal(host):
+        if "username" not in credentials or "password" not in credentials:
+            raise Exception("Xtream portal detected but username/password missing.")
+        playlist = fetch_xtream_live_channels(host, credentials["username"], credentials["password"], allowed_groups)
+    else:
+        if "mac_address" not in credentials:
+            raise Exception("Stalker portal detected but MAC address missing.")
+        playlist = fetch_stalker_live_channels(host, credentials["mac_address"], allowed_groups)
 
-# Save playlist
-with open("filtered_playlist.m3u", "w", encoding="utf-8") as file:
-    file.write("\n".join(playlist))
+    with open("filtered_playlist.m3u", "w", encoding="utf-8") as file:
+        file.write("\n".join(playlist))
 
-print("\n✅ Playlist generated successfully!")
+    print("\n✅ Playlist generated successfully!")
+
+except Exception as e:
+    print(f"\n❌ Error: {e}")

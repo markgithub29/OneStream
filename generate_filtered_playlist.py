@@ -142,9 +142,6 @@ def fetch_stalker_live_channels(host, mac_address, allowed_groups):
 with open("xtream_login.json", "r") as file:
     credentials = json.load(file)
 
-host = credentials["host"].rstrip("/")
-allowed_groups = ["INDIA", "INDIAN", "TELUGU", "CRICKET"]
-
 try:
     if is_xtream_portal(host):
         if "username" not in credentials or "password" not in credentials:
